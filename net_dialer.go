@@ -24,9 +24,9 @@ import (
 // DialConnection is recommended, but of course all functions are practically the same.
 // The returned net.Conn can be directly asserted as Connection if error is nil.
 type Dialer interface {
-	DialConnection(network, address string, timeout time.Duration) (connection Connection, err error)
+	DialConnection(network, address string, timeout time.Duration, ctx ...context.Context) (connection Connection, err error)
 
-	DialTimeout(network, address string, timeout time.Duration) (conn net.Conn, err error)
+	DialTimeout(network, address string, timeout time.Duration, ctx ...context.Context) (conn net.Conn, err error)
 }
 
 // DialConnection is a default implementation of Dialer.
@@ -44,14 +44,25 @@ var defaultDialer = NewDialer()
 type dialer struct{}
 
 // DialTimeout implements Dialer.
-func (d *dialer) DialTimeout(network, address string, timeout time.Duration) (net.Conn, error) {
-	conn, err := d.DialConnection(network, address, timeout)
-	return conn, err
+func (d *dialer) DialTimeout(network, address string, timeout time.Duration, ctx ...context.Context) (net.Conn, error) {
+    var conn net.Conn
+    var err error
+    if len(ctx) > 0{
+        conn, err = d.DialConnection(network, address, timeout, ctx[0])
+    } else{
+        conn, err = d.DialConnection(network, address, timeout)
+    }
+    return conn, err
 }
 
 // DialConnection implements Dialer.
-func (d *dialer) DialConnection(network, address string, timeout time.Duration) (connection Connection, err error) {
+func (d *dialer) DialConnection(network, address string, timeout time.Duration, ctxPrev ...context.Context) (connection Connection, err error) {
 	ctx := context.Background()
+	if len(ctxPrev) > 0{
+		if val, ok := ctxPrev[0].Value("DSCP").(int); ok{
+			ctx = context.WithValue(ctx, "DSCP", val)
+		}
+	}
 	if timeout > 0 {
 		subCtx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
