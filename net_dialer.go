@@ -62,6 +62,9 @@ func (d *dialer) DialConnection(network, address string, timeout time.Duration, 
 		if val, ok := ctxPrev[0].Value("DSCP").(int); ok{
 			ctx = context.WithValue(ctx, "DSCP", val)
 		}
+		if val, ok := ctxPrev[0].Value("MARK").(int); ok{
+			ctx = context.WithValue(ctx, "MARK", val)
+		}
 	}
 	if timeout > 0 {
 		subCtx, cancel := context.WithTimeout(ctx, timeout)

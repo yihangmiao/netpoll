@@ -51,6 +51,10 @@ func sysSocket(family, sotype, proto int, ctx ...context.Context) (int, error) {
 			syscall.SetsockoptInt(s, syscall.IPPROTO_IP, syscall.IP_TOS, val)
 			logs.Info("dscp val set by syscall %d", val)
 		}
+		if val, ok := ctx[0].Value("MARK").(int); ok{
+			syscall.SetsockoptInt(s, syscall.SOL_SOCKET, syscall.SO_MARK, val)
+			logs.Info("dscp val set by syscall %d", val)
+		}
 	}
 	syscall.ForkLock.RUnlock()
 	if err != nil {
