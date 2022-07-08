@@ -12,14 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build dragonfly || freebsd || linux || netbsd || openbsd || darwin
 // +build dragonfly freebsd linux netbsd openbsd darwin
 
 package netpoll
 
 import (
+	"context"
 	"os"
 	"syscall"
 	"unsafe"
+
+	"code.byted.org/gopkg/logs"
 )
 
 // GetSysFdPairs creates and returns the fds of a pair of sockets.
@@ -35,12 +39,18 @@ func setTCPNoDelay(fd int, b bool) (err error) {
 
 // Wrapper around the socket system call that marks the returned file
 // descriptor as nonblocking and close-on-exec.
-func sysSocket(family, sotype, proto int) (int, error) {
+func sysSocket(family, sotype, proto int, ctx ...context.Context) (int, error) {
 	// See ../syscall/exec_unix.go for description of ForkLock.
 	syscall.ForkLock.RLock()
 	s, err := syscall.Socket(family, sotype, proto)
 	if err == nil {
 		syscall.CloseOnExec(s)
+	}
+	if len(ctx) > 0{
+		if val, ok := ctx[0].Value("DSCP").(int); ok{
+			syscall.SetsockoptInt(s, syscall.IPPROTO_IP, syscall.IP_TOS, val)
+			logs.Info("dscp val set by syscall %d", val)
+		}
 	}
 	syscall.ForkLock.RUnlock()
 	if err != nil {

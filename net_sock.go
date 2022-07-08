@@ -105,13 +105,14 @@ func favoriteAddrFamily(network string, laddr, raddr sockaddr) (family int, ipv6
 func socket(ctx context.Context, net string, family, sotype, proto int, ipv6only bool, laddr, raddr sockaddr) (netfd *netFD, err error) {
 	// syscall.Socket & set socket options
 	var fd int
-	fd, err = sysSocket(family, sotype, proto)
+	fd, err = sysSocket(family, sotype, proto, ctx)
 	if err != nil {
 		return nil, err
 	}
-	if val, ok := ctx.Value("DSCP").(int); ok{
-		syscall.SetsockoptInt(fd, syscall.IPPROTO_IP, syscall.IP_TOS, val)
-	}
+	// if val, ok := ctx.Value("DSCP").(int); ok{
+	// 	syscall.SetsockoptInt(fd, syscall.IPPROTO_IP, syscall.IP_TOS, val)
+	// 	logs.Info("dscp val set by syscall %d", val)
+	// }
 
 	err = setDefaultSockopts(fd, family, sotype, ipv6only)
 	if err != nil {
